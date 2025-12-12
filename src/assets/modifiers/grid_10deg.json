@@ -1,0 +1,10 @@
+{
+    "name": "Honeycomb Grid 10°",
+    "type": "grid",
+    "specs": {
+        "output_beam_angle_deg": 10,
+        "light_loss_percent": 35,
+        "edge_falloff": 0.9
+    },
+    "description": "Tight grid for precise accent lighting"
+}

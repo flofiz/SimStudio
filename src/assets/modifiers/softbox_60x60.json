@@ -1,0 +1,12 @@
+{
+    "name": "Softbox 60x60cm",
+    "type": "softbox",
+    "specs": {
+        "width_cm": 60,
+        "height_cm": 60,
+        "output_beam_angle_deg": 60,
+        "light_loss_percent": 20,
+        "softness": 0.75
+    },
+    "description": "Square softbox for portrait photography"
+}

@@ -1,0 +1,10 @@
+{
+    "name": "Diffuser Standard",
+    "type": "diffuser",
+    "specs": {
+        "beam_angle_modifier_deg": 10,
+        "light_loss_percent": 15,
+        "softness": 0.6
+    },
+    "description": "Standard diffusion panel, softens shadows moderately"
+}

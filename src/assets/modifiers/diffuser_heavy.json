@@ -1,0 +1,10 @@
+{
+    "name": "Diffuser Heavy",
+    "type": "diffuser",
+    "specs": {
+        "beam_angle_modifier_deg": 20,
+        "light_loss_percent": 30,
+        "softness": 0.9
+    },
+    "description": "Heavy diffusion, very soft light with significant light loss"
+}

@@ -1,0 +1,10 @@
+{
+    "name": "Honeycomb Grid 20°",
+    "type": "grid",
+    "specs": {
+        "output_beam_angle_deg": 20,
+        "light_loss_percent": 25,
+        "edge_falloff": 0.8
+    },
+    "description": "Medium grid for controlled accent lighting"
+}

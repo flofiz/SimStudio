@@ -1,0 +1,12 @@
+{
+    "name": "Softbox 90x120cm",
+    "type": "softbox",
+    "specs": {
+        "width_cm": 90,
+        "height_cm": 120,
+        "output_beam_angle_deg": 90,
+        "light_loss_percent": 25,
+        "softness": 0.85
+    },
+    "description": "Large rectangular softbox for full body shots"
+}

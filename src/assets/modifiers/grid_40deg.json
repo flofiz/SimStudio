@@ -1,0 +1,10 @@
+{
+    "name": "Honeycomb Grid 40°",
+    "type": "grid",
+    "specs": {
+        "output_beam_angle_deg": 40,
+        "light_loss_percent": 15,
+        "edge_falloff": 0.6
+    },
+    "description": "Wide grid for subtle spill control"
+}

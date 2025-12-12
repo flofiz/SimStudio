@@ -1,0 +1,9 @@
+{
+    "name": "Barn Doors",
+    "type": "barndoors",
+    "specs": {
+        "light_loss_percent": 5,
+        "adjustable": true
+    },
+    "description": "Four-leaf barn doors for light shaping"
+}

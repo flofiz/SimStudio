@@ -1,0 +1,13 @@
+{
+  "name": "COB 60W Daylight",
+  "type": "cob_light",
+  "specs": {
+    "power_watts": 60,
+    "lumens": 7200,
+    "efficacy_lm_w": 120,
+    "cct_kelvin": 5600,
+    "cri": 95,
+    "beam_angle_deg": 120
+  },
+  "compatible_modifiers": ["diffuser", "grid", "softbox", "barndoors"]
+}
