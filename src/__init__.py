@@ -30,6 +30,7 @@ classes = (
     light_modifiers.SS_OT_clear_modifiers,
     light_modifiers.SS_OT_set_power,
     light_modifiers.SS_OT_spawn_cob,
+    light_modifiers.SS_OT_spawn_cob_poc,
     light_modifiers.SS_OT_reload_assets,
     light_modifiers.SS_MT_light_presets,
     light_modifiers.SS_MT_modifier_presets,

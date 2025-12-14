@@ -42,11 +42,32 @@ class SS_PT_light_mixer(bpy.types.Panel):
 
         # Tools Header
         row = layout.row()
+        row.label(text="Experimental", icon='PHYSICS')
+        row.operator("light.ss_spawn_cob_poc", icon='NODETREE', text="Spawn COB POC (GN)")
+        
+        row = layout.row()
         row.operator("scene.export_lighting_diagram", icon='FILE', text="Export Diagram")
 
         # ===== SELECTED LIGHT SETTINGS =====
-        obj = context.active_object
-        if obj and obj.type == 'LIGHT':
+        
+        # Helper to find light
+        active_obj = context.active_object
+        light_obj = None
+        
+        # Check standard light
+        if active_obj and active_obj.type == 'LIGHT':
+            light_obj = active_obj
+        # Check Rig
+        elif active_obj and active_obj.type == 'MESH':
+             if active_obj.children:
+                 for child in active_obj.children:
+                     if child.type == 'LIGHT':
+                         light_obj = child
+                         break
+        
+        if light_obj:
+            obj = light_obj  # Use the found light for the rest of UI
+            
             layout.separator()
             box = layout.box()
             box.label(text="Modifier Stack", icon='MODIFIER')
@@ -107,7 +128,7 @@ class SS_PT_light_mixer(bpy.types.Panel):
                         mod_box.label(text=f"  • {mod.strip()}")
         else:
             box = layout.box()
-            box.label(text="Select a light to configure", icon='INFO')
+            box.label(text="Select a light or rig to configure", icon='INFO')
 
         # ===== CAMERA SECTION =====
         layout.separator()
