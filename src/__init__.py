@@ -17,6 +17,7 @@ from . import diagram_generator
 from . import camera_sim
 from . import asset_library
 from . import light_modifiers
+from . import geometry_nodes_scrim
 
 classes = (
     light_engine.SS_OT_convert_to_real_light,
@@ -31,6 +32,7 @@ classes = (
     light_modifiers.SS_OT_set_power,
     light_modifiers.SS_OT_spawn_cob,
     light_modifiers.SS_OT_spawn_cob_poc,
+    light_modifiers.SS_OT_spawn_diffusion_frame,
     light_modifiers.SS_OT_reload_assets,
     light_modifiers.SS_MT_light_presets,
     light_modifiers.SS_MT_modifier_presets,

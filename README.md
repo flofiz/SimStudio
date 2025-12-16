@@ -45,3 +45,34 @@ Control Blender's exposure using photography terms:
 2. Use the **Power %** slider to adjust intensity while keeping max wattage reference.
 3. Click **Add Modifier** to attach accessories like Grids or Softboxes.
 4. Click **Convert Selected** to treat a standard Blender light as a physical light.
+
+## Development
+
+### Project Structure
+```
+AddonBlender/
+├── src/                    # Source code (addon files)
+│   ├── assets/             # JSON presets (lights, modifiers)
+│   ├── __init__.py         # Addon entry point
+│   ├── ui_panel.py         # UI Panel
+│   ├── light_modifiers.py  # Operators
+│   ├── geometry_nodes.py   # GN Rig generator
+│   └── ...
+├── build/                  # Build output (auto-generated)
+├── SimulationStudio.zip    # Packaged addon
+└── README.md
+```
+
+### Build Commands
+
+**Build the addon (Windows PowerShell):**
+```powershell
+python -c "import shutil, os; build_dir = r'build\SimulationStudio'; shutil.rmtree('build', ignore_errors=True); os.makedirs(build_dir, exist_ok=True); shutil.copytree('src', build_dir, dirs_exist_ok=True); shutil.make_archive('SimulationStudio', 'zip', 'build')"
+```
+
+**Build the addon (Linux/macOS):**
+```bash
+rm -rf build && mkdir -p build/SimulationStudio && cp -r src/* build/SimulationStudio/ && cd build && zip -r ../SimulationStudio.zip SimulationStudio
+```
+
+This creates `SimulationStudio.zip` ready for installation in Blender.

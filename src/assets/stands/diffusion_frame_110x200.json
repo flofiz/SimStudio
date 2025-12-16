@@ -1,0 +1,27 @@
+{
+    "name": "Diffusion Frame 110x200",
+    "type": "diffusion_frame",
+    "reference": "Manfrotto Pro Scrim Medium (MLLC1201K)",
+    "specs": {
+        "width_cm": 110,
+        "height_cm": 200,
+        "frame_tube_radius_m": 0.0125,
+        "leg_radius_m": 0.0175,
+        "leg_height_m": 1.5,
+        "leg_spacing_m": 1.2,
+        "light_loss_stops": 1.0,
+        "transmission_percent": 50,
+        "softness": 0.8
+    },
+    "material": {
+        "base_color": [
+            0.95,
+            0.95,
+            0.95
+        ],
+        "transmission": 0.5,
+        "roughness": 0.8,
+        "subsurface": 0.1
+    },
+    "description": "Professional scrim frame for diffusion and light control, 110x200cm panel on dual support legs"
+}

@@ -53,6 +53,7 @@ def create_light_rig_nodetree(name="SimStudio_Light_Rig"):
 
         # Modifiers Toggles
         ng.interface.new_socket(name="Show Diffuser", in_out='INPUT', socket_type='NodeSocketBool')
+        ng.interface.new_socket(name="Show Frame", in_out='INPUT', socket_type='NodeSocketBool')
         
         # Geometry Output
         ng.interface.new_socket(name="Geometry", in_out='OUTPUT', socket_type='NodeSocketGeometry')
@@ -62,10 +63,12 @@ def create_light_rig_nodetree(name="SimStudio_Light_Rig"):
         ng.inputs.clear()
         ng.outputs.clear()
         ng.inputs.new('NodeSocketFloat', "Tripod Height")
+        # ... (Legacy logic abbreviated for brevity, assuming Blender 4.0+ focus)
         ng.inputs[-1].default_value = 1.5
         ng.inputs.new('NodeSocketFloat', "Tilt")
         ng.inputs.new('NodeSocketFloat', "Pan")
         ng.inputs.new('NodeSocketBool', "Show Diffuser")
+        ng.inputs.new('NodeSocketBool', "Show Frame")
         ng.outputs.new('NodeSocketGeometry', "Geometry")
 
     # Construct the Node Tree
@@ -83,153 +86,139 @@ def construct_nodes(ng):
     
     # --- Input/Output ---
     node_in = nodes.new('NodeGroupInput')
-    node_in.location = (-800, 0)
+    node_in.location = (-1000, 0)
     
     node_out = nodes.new('NodeGroupOutput')
-    node_out.location = (800, 0)
+    node_out.location = (1000, 0)
     
     # --- 1. Tripod Base (Fixed Cylinder) ---
-    # Cylinder Node
     cyl_base = nodes.new('GeometryNodeMeshCylinder')
     cyl_base.inputs['Vertices'].default_value = 32
     cyl_base.inputs['Radius'].default_value = 0.05
     cyl_base.inputs['Depth'].default_value = 1.0
-    cyl_base.location = (-400, -200)
+    cyl_base.location = (-600, -200)
     
-    # Transform Base (Move up by half height so pivot is at bottom)
     trans_base = nodes.new('GeometryNodeTransform')
     trans_base.inputs['Translation'].default_value = (0, 0, 0.5)
-    trans_base.location = (-200, -200)
+    trans_base.location = (-400, -200)
     
     links.new(cyl_base.outputs['Mesh'], trans_base.inputs['Geometry'])
     
-    # --- 2. Tripod Pole (Adjustable Height) ---
-    # Cylinder Node
-    cyl_pole = nodes.new('GeometryNodeMeshCylinder')
-    cyl_pole.inputs['Vertices'].default_value = 32
-    cyl_pole.inputs['Radius'].default_value = 0.04
-    cyl_pole.location = (-400, 200)
+    # --- 2. Tripod Pole ---
+    # Simplified visual: One Cylinder scaled/translated? 
+    # Let's keep the user's structure or simplifying it.
+    # Just linking base for now to Main Join.
     
-    # The pole depth should match the input height roughly, but let's keep it simple
-    # We will just scale/move a cylinder based on "Tripod Height"
-    # Actually, simpler: Translate a second cylinder to the top
-    
-    # Combine Base + Pole? 
-    # Let's make "Tripod Height" move the HEAD, and the pole stretches.
-    # For POC, let's just use one cylinder scaled z.
-    
-    # Combine Geometry
     join_geo = nodes.new('GeometryNodeJoinGeometry')
-    join_geo.location = (600, 0)
+    join_geo.location = (800, 0)
     
     links.new(trans_base.outputs['Geometry'], join_geo.inputs['Geometry'])
     
     # --- 3. Projector Head (Cube) ---
     cube_head = nodes.new('GeometryNodeMeshCube')
     cube_head.inputs['Size'].default_value = (0.2, 0.2, 0.2)
-    cube_head.location = (-400, 600)
+    cube_head.location = (-600, 600)
     
-    # Transform Head
-    trans_head = nodes.new('GeometryNodeTransform')
-    trans_head.location = (0, 600)
+    # Offset Cube so its "Bottom" (-Z) face is at 0,0,0
+    # This ensures the Light (which is at 0,0,0) sits on the surface, not inside.
+    trans_cube_offset = nodes.new('GeometryNodeTransform')
+    trans_cube_offset.inputs['Translation'].default_value = (0, 0, 0.1) # Move up 10cm
+    trans_cube_offset.location = (-400, 600)
     
-    # We need to rotate and translate the head
-    # Translation Z = Tripod Height Input
+    # --- 4. Modifiers Logic (Diffuser & Frame) ---
+    # We will join Diffuser and Frame to the Head geometry BEFORE transforming the whole head.
     
-    # Combine XYZ for Translation
-    combine_xyz = nodes.new('ShaderNodeCombineXYZ')
-    combine_xyz.location = (-200, 400)
+    join_head_parts = nodes.new('GeometryNodeJoinGeometry')
+    join_head_parts.location = (-200, 600)
     
-    # Link Input Height to Z
-    if bpy.app.version >= (4, 0, 0):
-        # By names usually works if sockets exist
-        links.new(node_in.outputs['Tripod Height'], combine_xyz.inputs['Z'])
-    else:
-         links.new(node_in.outputs[0], combine_xyz.inputs['Z']) # 0 is Height
-         
-    links.new(combine_xyz.outputs['Vector'], trans_head.inputs['Translation'])
+    links.new(cube_head.outputs['Mesh'], trans_cube_offset.inputs['Geometry'])
+    links.new(trans_cube_offset.outputs['Geometry'], join_head_parts.inputs['Geometry'])
     
-    # Rotation (Tilt/Pan)
-    combine_rot = nodes.new('ShaderNodeCombineXYZ')
-    combine_rot.location = (-200, 550)
-    
-    # Link Tilt (X) and Pan (Z)
-    if bpy.app.version >= (4, 0, 0):
-        links.new(node_in.outputs['Tilt'], combine_rot.inputs['X'])
-        links.new(node_in.outputs['Pan'], combine_rot.inputs['Z'])
-    else:
-        links.new(node_in.outputs[1], combine_rot.inputs['X'])
-        links.new(node_in.outputs[2], combine_rot.inputs['Z'])
-        
-    links.new(combine_rot.outputs['Vector'], trans_head.inputs['Rotation'])
-    links.new(cube_head.outputs['Mesh'], trans_head.inputs['Geometry'])
-    
-    links.new(trans_head.outputs['Geometry'], join_geo.inputs['Geometry'])
-    
-    # --- 4. Diffuser (Cone) ---
-    # Switch node to toggle
-    switch_diff = nodes.new('GeometryNodeSwitch')
-    switch_diff.input_type = 'GEOMETRY' 
-    switch_diff.location = (400, 800)
-    
-    # Cone Geometry
+    # A. Diffuser Cone
     cone = nodes.new('GeometryNodeMeshCone')
     cone.inputs['Radius Bottom'].default_value = 0.3
     cone.inputs['Radius Top'].default_value = 0.1
     cone.inputs['Depth'].default_value = 0.4
-    cone.location = (-200, 800)
+    cone.location = (-600, 800)
     
-    # Transform Cone (Move to front of head)
     trans_cone = nodes.new('GeometryNodeTransform')
-    trans_cone.location = (0, 800)
-    # Move locally? No, we transform the cone then attach to head transform?
-    # Better: Join Cube + Cone, THEN Apply Head Transform.
+    trans_cone.inputs['Translation'].default_value = (0, 0, -0.3)
+    trans_cone.location = (-400, 800)
+    links.new(cone.outputs['Mesh'], trans_cone.inputs['Geometry'])
     
-    # Let's restructure Head Transform
-    # Cube -> Join 1
-    # Cone -> Switch -> Join 1
-    # Join 1 -> Transform Head -> Final Join
+    switch_diff = nodes.new('GeometryNodeSwitch')
+    switch_diff.input_type = 'GEOMETRY' 
+    switch_diff.location = (-200, 800)
+    links.new(trans_cone.outputs['Geometry'], switch_diff.inputs['True'])
     
-    # Delete previous links to restructure
-    # Remove link trans_head -> join_geo
-    # Remove link cube_head -> trans_head
+    # B. Diffusion Frame
+    # Curve Rectangle
+    rect_curve = nodes.new('GeometryNodeCurvePrimitiveQuadrilateral')
+    rect_curve.inputs['Width'].default_value = 0.6
+    rect_curve.inputs['Height'].default_value = 0.6
+    rect_curve.location = (-600, 1000)
     
-    # Create Head Join
-    join_head = nodes.new('GeometryNodeJoinGeometry')
-    join_head.location = (-100, 600)
+    # Profile (Circle)
+    profile_curve = nodes.new('GeometryNodeCurvePrimitiveCircle')
+    profile_curve.inputs['Radius'].default_value = 0.01
+    profile_curve.location = (-600, 900)
     
-    links.new(cube_head.outputs['Mesh'], join_head.inputs['Geometry'])
+    # Curve to Mesh
+    curve_to_mesh = nodes.new('GeometryNodeCurveToMesh')
+    curve_to_mesh.location = (-400, 1000)
+    links.new(rect_curve.outputs['Curve'], curve_to_mesh.inputs['Curve'])
+    links.new(profile_curve.outputs['Curve'], curve_to_mesh.inputs['Profile Curve'])
     
-    # Setup Cone Logic
-    # Move cone down -Z (default cone points up Z) so it aligned with front (let's say -Y is front)
-    # Standard Blender light points -Z.
-    # So lets make the cone point -Z.
-    # Cone default is along Z. Rotate 180 X? Or just translate.
-    # Let's just create it and translate it relative to Cube.
-    # Say Cube is at 0,0,0 local (Head space).
-    # Cone should be below it (-Z).
+    # Transform Frame (Position it)
+    trans_frame = nodes.new('GeometryNodeTransform')
+    trans_frame.inputs['Translation'].default_value = (0, 0, -0.55) # In front of cone
+    trans_frame.location = (-200, 1000)
+    links.new(curve_to_mesh.outputs['Mesh'], trans_frame.inputs['Geometry'])
     
-    trans_cone_local = nodes.new('GeometryNodeTransform')
-    trans_cone_local.inputs['Translation'].default_value = (0, 0, -0.3) # Move down
-    trans_cone_local.location = (0, 800)
+    # Switch Frame
+    switch_frame = nodes.new('GeometryNodeSwitch')
+    switch_frame.input_type = 'GEOMETRY'
+    switch_frame.location = (0, 1000)
+    links.new(trans_frame.outputs['Geometry'], switch_frame.inputs['True'])
     
-    links.new(cone.outputs['Mesh'], trans_cone_local.inputs['Geometry'])
-    links.new(trans_cone_local.outputs['Geometry'], switch_diff.inputs['True'])
+    # Connect Switches to Head Join
+    links.new(switch_diff.outputs['Output'], join_head_parts.inputs['Geometry'])
+    links.new(switch_frame.outputs['Output'], join_head_parts.inputs['Geometry'])
     
-    # Link Switch
-    if bpy.app.version >= (4, 0, 0):
-        links.new(node_in.outputs['Show Diffuser'], switch_diff.inputs['Switch'])
+    # --- 5. Transform Head ---
+    trans_head = nodes.new('GeometryNodeTransform')
+    trans_head.location = (200, 600)
+    links.new(join_head_parts.outputs['Geometry'], trans_head.inputs['Geometry'])
+    
+    # Drivers for Head Transform
+    # Translation Z = Height
+    combine_xyz = nodes.new('ShaderNodeCombineXYZ')
+    combine_xyz.location = (0, 400)
+    
+    # Rotation
+    combine_rot = nodes.new('ShaderNodeCombineXYZ')
+    combine_rot.location = (0, 500)
+    
+    # Linking Inputs
+    is_v4 = bpy.app.version >= (4, 0, 0)
+    
+    if is_v4:
+        links.new(node_in.outputs.get('Tripod Height') or node_in.outputs[0], combine_xyz.inputs['Z'])
+        links.new(node_in.outputs.get('Tilt') or node_in.outputs[1], combine_rot.inputs['X'])
+        links.new(node_in.outputs.get('Pan') or node_in.outputs[2], combine_rot.inputs['Z'])
+        links.new(node_in.outputs.get('Show Diffuser') or node_in.outputs[3], switch_diff.inputs['Switch'])
+        links.new(node_in.outputs.get('Show Frame') or node_in.outputs[4], switch_frame.inputs['Switch'])
     else:
+        links.new(node_in.outputs[0], combine_xyz.inputs['Z'])
+        links.new(node_in.outputs[1], combine_rot.inputs['X'])
+        links.new(node_in.outputs[2], combine_rot.inputs['Z'])
         links.new(node_in.outputs[3], switch_diff.inputs['Switch'])
+        links.new(node_in.outputs[4], switch_frame.inputs['Switch'])
         
-    links.new(switch_diff.outputs['Output'], join_head.inputs['Geometry'])
+    links.new(combine_xyz.outputs['Vector'], trans_head.inputs['Translation'])
+    links.new(combine_rot.outputs['Vector'], trans_head.inputs['Rotation'])
     
-    # Now link Head Join to existing Head Transform
-    links.new(join_head.outputs['Geometry'], trans_head.inputs['Geometry'])
-    
-    # Link Head Transform to Final Join
+    # Final Join
     links.new(trans_head.outputs['Geometry'], join_geo.inputs['Geometry'])
-    
-    # Output
     links.new(join_geo.outputs['Geometry'], node_out.inputs['Geometry'])
 

@@ -243,7 +243,9 @@ class SS_OT_spawn_cob_poc(bpy.types.Operator):
         
         # 4. Sync Light to Rig via Drivers (Using Identifiers)
         light_obj.parent = rig_obj
-        light_obj.location = (0, 0, 0) # Base
+        # Light is at 0,0,0 (Pivot Point).
+        # We offset the GN Cube geometry so 0,0,0 is the front face.
+        light_obj.location = (0, 0, 0)
         
         # Helper to find identifier
         def get_input_identifier(ng, name):
@@ -297,6 +299,41 @@ class SS_OT_spawn_cob_poc(bpy.types.Operator):
         
         self.report({'INFO'}, "Spawned COB POC (Robust Drivers)")
         return {'FINISHED'}
+
+
+class SS_OT_spawn_diffusion_frame(bpy.types.Operator):
+    """Spawn a Diffusion Frame (Scrim) with Geometry Nodes Rig"""
+    bl_idname = "light.ss_spawn_diffusion_frame"
+    bl_label = "Add Diffusion Frame"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+        from . import geometry_nodes_scrim
+        
+        # 1. Create the Rig Object (Mesh)
+        mesh = bpy.data.meshes.new("Scrim_Rig_Mesh")
+        rig_obj = bpy.data.objects.new("Diffusion_Frame_110x200", mesh)
+        context.collection.objects.link(rig_obj)
+        rig_obj.location = context.scene.cursor.location
+        
+        # 2. Add Geometry Nodes Modifier
+        mod = rig_obj.modifiers.new(name="SimStudio Scrim Rig", type='NODES')
+        node_group = geometry_nodes_scrim.create_scrim_rig_nodetree()
+        mod.node_group = node_group
+        
+        # 3. Store asset info
+        rig_obj['ss_asset_type'] = 'diffusion_frame'
+        rig_obj['ss_asset_name'] = 'Diffusion Frame 110x200'
+        rig_obj['ss_reference'] = 'Manfrotto Pro Scrim Medium (MLLC1201K)'
+        
+        # 4. Select the Rig
+        bpy.ops.object.select_all(action='DESELECT')
+        rig_obj.select_set(True)
+        context.view_layer.objects.active = rig_obj
+        
+        self.report({'INFO'}, "Spawned Diffusion Frame (110x200cm)")
+        return {'FINISHED'}
+
 
 class SS_OT_reload_assets(bpy.types.Operator):
     """Reload Asset Library from Disk"""

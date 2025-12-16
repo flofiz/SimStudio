@@ -46,6 +46,9 @@ class SS_PT_light_mixer(bpy.types.Panel):
         row.operator("light.ss_spawn_cob_poc", icon='NODETREE', text="Spawn COB POC (GN)")
         
         row = layout.row()
+        row.operator("light.ss_spawn_diffusion_frame", icon='MESH_PLANE', text="Add Diffusion Frame")
+        
+        row = layout.row()
         row.operator("scene.export_lighting_diagram", icon='FILE', text="Export Diagram")
 
         # ===== SELECTED LIGHT SETTINGS =====
