@@ -173,92 +173,56 @@ class SS_OT_spawn_cob(bpy.types.Operator):
     preset_name: bpy.props.StringProperty(name="Preset Name")
     
     def execute(self, context):
+        import math
+        from . import geometry_nodes, asset_library
+        
         # 1. Load preset data
         preset_data = asset_library.load_preset_by_name(self.preset_name, 'light')
         if not preset_data:
             self.report({'ERROR'}, f"Preset '{self.preset_name}' not found")
             return {'CANCELLED'}
-            
-        # 2. Create new Light Data
-        light_data = bpy.data.lights.new(name=self.preset_name, type='SPOT')
-        
-        # 3. Apply Preset
-        # We can pass the new light data directly
-        asset_library.apply_light_preset(light_data, preset_data)
-        
-        # 4. Create Object and Link
-        light_obj = bpy.data.objects.new(name=self.preset_name, object_data=light_data)
-        context.collection.objects.link(light_obj)
-        
-        # 5. Position at 3D Cursor
-        light_obj.location = context.scene.cursor.location
-        # Default rotation (pointing down? or forward?)
-        # Standard Blender add is usually looking down (-Z) but objects create at 0,0,0
-        # Let's leave rotation default (pointing down -Z usually for spots)
-        
-        # 6. Select and Activate
-        bpy.ops.object.select_all(action='DESELECT')
-        light_obj.select_set(True)
-        context.view_layer.objects.active = light_obj
-        
-        self.report({'INFO'}, f"Spawned {self.preset_name}")
-        return {'FINISHED'}
 
-class SS_OT_spawn_cob_poc(bpy.types.Operator):
-    """Spawn COB 100W POC with Geometry Nodes Rig"""
-    bl_idname = "light.ss_spawn_cob_poc"
-    bl_label = "Spawn COB POC (GN)"
-    bl_options = {'REGISTER', 'UNDO'}
-    
-    def execute(self, context):
-        import math
-        from . import geometry_nodes
-        
-    def execute(self, context):
-        import math
-        from . import geometry_nodes
-        
-        # 1. Create the Rig Object (Mesh)
-        mesh = bpy.data.meshes.new("COB_Rig_Mesh")
-        rig_obj = bpy.data.objects.new("COB_100W_Rig", mesh)
+        # 2. Create the Rig Object (Mesh)
+        # Unique name based on preset
+        safe_name = self.preset_name.replace(" ", "_")
+        mesh = bpy.data.meshes.new(f"{safe_name}_Rig_Mesh")
+        rig_obj = bpy.data.objects.new(f"{safe_name}_Rig", mesh)
         context.collection.objects.link(rig_obj)
         rig_obj.location = context.scene.cursor.location
         
-        # 2. Add Geometry Nodes Modifier
+        # Store metadata on Rig
+        rig_obj['ss_asset_type'] = 'light_rig'
+        rig_obj['ss_preset_name'] = self.preset_name
+        
+        # 3. Add Geometry Nodes Modifier (Shared Tree)
         mod = rig_obj.modifiers.new(name="SimStudio Rig", type='NODES')
-        node_group = geometry_nodes.create_light_rig_nodetree()
+        node_group = geometry_nodes.get_cob_rig_nodetree()
         mod.node_group = node_group
         
-        # 3. Spawn the Actual Light
-        light_data = bpy.data.lights.new(name="COB_100W_Light", type='SPOT')
-        light_obj = bpy.data.objects.new("COB_100W_Light", light_data)
+        # 4. Spawn the Actual Light
+        light_data = bpy.data.lights.new(name=f"{safe_name}_Light", type='SPOT')
+        light_obj = bpy.data.objects.new(f"{safe_name}_Light", light_data)
         context.collection.objects.link(light_obj)
         
-        # Apply Logic for 100W
-        light_data.energy = 12000 / 100.0 
-        light_data.spot_size = math.radians(120)
-        light_data['ss_preset_name'] = "COB 100W (POC)"
-        light_data['ss_base_lumens'] = 12000
-        light_data['ss_power_percent'] = 100.0
+        # 5. Apply Preset Properties to Light
+        asset_library.apply_light_preset(light_data, preset_data)
         
-        # 4. Sync Light to Rig via Drivers (Using Identifiers)
+        # 6. Sync Light to Rig via Robust Drivers
         light_obj.parent = rig_obj
-        # Light is at 0,0,0 (Pivot Point).
-        # We offset the GN Cube geometry so 0,0,0 is the front face.
+        # Offset logic: Pivot is at cube front face (GN offset), light is at pivot (0,0,0)
         light_obj.location = (0, 0, 0)
         
-        # Helper to find identifier
+        # Helper to find identifier (Define inside or import?)
         def get_input_identifier(ng, name):
             if bpy.app.version >= (4, 0, 0):
                 if hasattr(ng, 'interface'):
                     for item in ng.interface.items_tree:
                         if item.name == name:
-                            return f'["{item.identifier}"]' # Dictionary access syntax
+                            return f'["{item.identifier}"]' 
             else:
                 for item in ng.inputs:
                     if item.name == name:
                         return f'["{item.identifier}"]'
-            # Fallback to name if not found (risky but better than crash)
             return f'["{name}"]'
 
         # Driver for Location Z -> Modifier "Tripod Height"
@@ -268,7 +232,6 @@ class SS_OT_spawn_cob_poc(bpy.types.Operator):
         var.name = "h"
         var.type = 'SINGLE_PROP'
         var.targets[0].id = rig_obj
-        # Path: modifiers["SimStudio Rig"][identifier]
         var.targets[0].data_path = f'modifiers["SimStudio Rig"]{h_id}' 
         d.driver.expression = "h"
         
@@ -291,14 +254,16 @@ class SS_OT_spawn_cob_poc(bpy.types.Operator):
         var.targets[0].id = rig_obj
         var.targets[0].data_path = f'modifiers["SimStudio Rig"]{pan_id}'
         d.driver.expression = "pan"
-            
-        # Select Rig
+        
+        # 7. Select Rig
         bpy.ops.object.select_all(action='DESELECT')
         rig_obj.select_set(True)
         context.view_layer.objects.active = rig_obj
         
-        self.report({'INFO'}, "Spawned COB POC (Robust Drivers)")
+        self.report({'INFO'}, f"Spawned {self.preset_name} (GN)")
         return {'FINISHED'}
+
+
 
 
 class SS_OT_spawn_diffusion_frame(bpy.types.Operator):

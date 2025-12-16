@@ -41,9 +41,9 @@ class SS_PT_light_mixer(bpy.types.Panel):
         layout.separator()
 
         # Tools Header
-        row = layout.row()
-        row.label(text="Experimental", icon='PHYSICS')
-        row.operator("light.ss_spawn_cob_poc", icon='NODETREE', text="Spawn COB POC (GN)")
+        # row = layout.row()
+        # row.label(text="Experimental", icon='PHYSICS')
+        # row.operator("light.ss_spawn_cob_poc", icon='NODETREE', text="Spawn COB POC (GN)")
         
         row = layout.row()
         row.operator("light.ss_spawn_diffusion_frame", icon='MESH_PLANE', text="Add Diffusion Frame")
@@ -105,7 +105,8 @@ class SS_PT_light_mixer(bpy.types.Panel):
                     box.label(text=f"Output: {int(eff_lumens):,} lm")
             else:
                  box.label(text="Light is not a SimStudio Asset", icon='INFO')
-                 box.operator("light.ss_apply_preset", text="Convert to Asset")
+                 # box.operator("light.ss_apply_preset", text="Convert to Asset") # REMOVED per request
+            
             
             # Modifiers section (Available for all lights, but best for assets)
             box.separator()

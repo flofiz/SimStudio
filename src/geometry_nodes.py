@@ -6,8 +6,8 @@ Generates the procedural geometry for tripods and light bodies.
 import bpy
 import math
 
-def create_light_rig_nodetree(name="SimStudio_Light_Rig"):
-    """Create or return the Geometry Nodes tree for the light rig"""
+def get_cob_rig_nodetree(name="SimStudio_COB_Rig"):
+    """Create or return the shared Geometry Nodes tree for the COB light rig"""
     if name in bpy.data.node_groups:
         return bpy.data.node_groups[name]
     
